@@ -1,0 +1,15 @@
+import http from 'k6/http';
+import { sleep } from 'k6';
+
+export let options = {
+    vus: 50,
+    duration: '1m',
+};
+
+export default function () {
+    http.get('https://test-api.com/home');
+    sleep(1);
+    http.get('https://test-api.com/about');
+    sleep(1);
+    http.get('https://test-api.com/contact');
+}
