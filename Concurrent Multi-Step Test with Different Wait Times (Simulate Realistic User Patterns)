@@ -1,0 +1,59 @@
+import http from 'k6/http';
+import { sleep, check } from 'k6';
+
+// Configuration for test
+export let options = {
+    stages: [
+        { duration: '1m', target: 100 }, // Ramp up to 100 users
+        { duration: '5m', target: 300 }, // Sustain 300 users
+        { duration: '1m', target: 0 },   // Ramp down
+    ],
+    thresholds: {
+        http_req_duration: ['p(95)<1500'], // 95% of requests should be below 1.5 seconds
+        http_req_failed: ['rate<0.02'],    // Less than 2% failures allowed
+    },
+};
+
+export default function () {
+    // Step 1: Load the home page
+    let homePageRes = http.get('https://test-api.com/home');
+    check(homePageRes, { 'homepage loaded': (r) => r.status === 200 });
+
+    // Simulate user waiting on the home page for 2-5 seconds
+    sleep(Math.random() * (5 - 2) + 2);
+
+    // Step 2: Browse a list of items (e.g., products)
+    let itemsRes = http.get('https://test-api.com/items');
+    check(itemsRes, { 'items loaded': (r) => r.status === 200 });
+
+    // Simulate a user spending time browsing items, waiting 3-7 seconds
+    sleep(Math.random() * (7 - 3) + 3);
+
+    // Step 3: Add an item to the cart
+    let addToCartRes = http.post('https://test-api.com/cart', JSON.stringify({
+        item_id: '12345',
+        quantity: 1,
+    }), {
+        headers: { 'Content-Type': 'application/json' },
+    });
+    check(addToCartRes, { 'item added to cart': (r) => r.status === 200 });
+
+    // Simulate a delay before checkout, as the user may review their cart or browse more items
+    sleep(Math.random() * (10 - 5) + 5);
+
+    // Step 4: Checkout process
+    let checkoutRes = http.post('https://test-api.com/checkout', JSON.stringify({
+        payment_method: 'credit_card',
+        shipping_address: '123 Main St, City, Country',
+    }), {
+        headers: { 'Content-Type': 'application/json' },
+    });
+    check(checkoutRes, { 'checkout successful': (r) => r.status === 200 });
+
+    // Step 5: Confirmation page
+    let confirmationRes = http.get('https://test-api.com/confirmation');
+    check(confirmationRes, { 'confirmation page loaded': (r) => r.status === 200 });
+
+    // Simulate a final delay before user logs out or closes the session
+    sleep(Math.random() * (3 - 1) + 1);
+}
