@@ -1,0 +1,31 @@
+import ws from 'k6/ws';
+import { check } from 'k6';
+
+export let options = {
+    vus: 10,
+    duration: '1m',
+};
+
+export default function () {
+    let url = 'wss://test-api.com/socket';
+    let res = ws.connect(url, {}, function (socket) {
+        socket.on('open', function () {
+            console.log('WebSocket connection opened');
+            socket.send('Hello, WebSocket!');
+        });
+
+        socket.on('message', function (data) {
+            console.log('Received: ' + data);
+        });
+
+        socket.on('close', function () {
+            console.log('WebSocket connection closed');
+        });
+
+        socket.setTimeout(function () {
+            socket.close();
+        }, 5000);
+    });
+
+    check(res, { 'status is 101': (r) => r && r.status === 101 });
+}
