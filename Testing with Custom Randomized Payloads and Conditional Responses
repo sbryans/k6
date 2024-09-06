@@ -1,0 +1,50 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { randomSeed, randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.2.0/index.js';
+
+randomSeed(12345); // Fixed seed for reproducibility
+
+export let options = {
+    vus: 100,
+    duration: '2m',
+};
+
+function generateRandomUser() {
+    const userId = randomIntBetween(1000, 9999);
+    return {
+        username: `user_${userId}`,
+        email: `user_${userId}@example.com`,
+        password: `password${randomIntBetween(1000, 9999)}`,
+    };
+}
+
+export default function () {
+    const url = 'https://test-api.com/register';
+    const user = generateRandomUser();
+    const payload = JSON.stringify(user);
+
+    const params = {
+        headers: { 'Content-Type': 'application/json' },
+    };
+
+    let res = http.post(url, payload, params);
+
+    // Check response status
+    if (res.status === 200) {
+        // Simulate a conditional path based on response
+        const loginRes = http.post('https://test-api.com/login', {
+            email: user.email,
+            password: user.password,
+        });
+
+        check(loginRes, {
+            'login succeeded': (r) => r.status === 200,
+        });
+    } else if (res.status === 409) {
+        console.log(`User ${user.username} already exists.`);
+    } else {
+        console.error(`Unexpected status: ${res.status}`);
+    }
+
+    sleep(1);
+}
