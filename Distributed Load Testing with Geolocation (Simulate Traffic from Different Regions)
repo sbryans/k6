@@ -1,0 +1,38 @@
+import http from 'k6/http';
+import { sleep, check } from 'k6';
+
+// Each region simulates different network conditions (e.g., latency, bandwidth)
+export let options = {
+    scenarios: {
+        US_West: {
+            executor: 'constant-vus',
+            vus: 100,
+            duration: '5m',
+            env: { GEOLOCATION: 'us-west' },
+        },
+        Europe: {
+            executor: 'constant-vus',
+            vus: 100,
+            duration: '5m',
+            env: { GEOLOCATION: 'europe' },
+        },
+        Asia: {
+            executor: 'constant-vus',
+            vus: 100,
+            duration: '5m',
+            env: { GEOLOCATION: 'asia' },
+        },
+    },
+    thresholds: {
+        http_req_duration: ['p(95)<3000'], // 95% of requests must complete within 3s
+    },
+};
+
+export default function () {
+    let res = http.get(`https://test-api.com/data?region=${__ENV.GEOLOCATION}`);
+    check(res, {
+        'status is 200': (r) => r.status === 200,
+    });
+
+    sleep(1);
+}
