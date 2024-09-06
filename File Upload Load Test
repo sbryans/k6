@@ -1,0 +1,23 @@
+import http from 'k6/http';
+import { sleep } from 'k6';
+
+export let options = {
+    vus: 10,
+    duration: '30s',
+};
+
+export default function () {
+    const url = 'https://test-api.com/upload';
+    const payload = {
+        file: http.file(open('./testfile.jpg', 'b'), 'testfile.jpg'),
+    };
+
+    const params = {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    };
+
+    http.post(url, payload, params);
+    sleep(1);
+}
