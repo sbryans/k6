@@ -1,0 +1,47 @@
+import http from 'k6/http';
+import { sleep, check } from 'k6';
+
+export let options = {
+    stages: [
+        { duration: '1m', target: 50 }, // ramp-up
+        { duration: '5m', target: 200 }, // sustain 200 users
+        { duration: '1m', target: 0 },  // ramp-down
+    ],
+    thresholds: {
+        'http_req_duration{name:checkout}': ['p(95)<2000'], // 95% of checkout requests must complete under 2s
+        'http_req_failed': ['rate<0.01'], // less than 1% of requests should fail
+    },
+};
+
+export default function () {
+    // Step 1: User logs in
+    let loginRes = http.post('https://test-api.com/login', {
+        email: 'testuser@example.com',
+        password: 'password123',
+    });
+    check(loginRes, { 'login success': (r) => r.status === 200 });
+
+    let authToken = loginRes.json('token');
+    let authHeaders = { headers: { Authorization: `Bearer ${authToken}` } };
+
+    sleep(1); // simulate time spent by the user on the page
+
+    // Step 2: Browse catalog
+    let catalogRes = http.get('https://test-api.com/catalog', authHeaders);
+    check(catalogRes, { 'catalog success': (r) => r.status === 200 });
+
+    sleep(1);
+
+    // Step 3: Add item to cart
+    let addItemRes = http.post('https://test-api.com/cart', {
+        product_id: '123',
+        quantity: 1,
+    }, authHeaders);
+    check(addItemRes, { 'item added': (r) => r.status === 200 });
+
+    sleep(1);
+
+    // Step 4: Checkout
+    let checkoutRes = http.post('https://test-api.com/checkout', {}, authHeaders);
+    check(checkoutRes, { 'checkout success': (r) => r.status === 200 });
+}
