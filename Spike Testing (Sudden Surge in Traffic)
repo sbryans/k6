@@ -1,0 +1,20 @@
+export let options = {
+    stages: [
+        { duration: '2m', target: 50 },   // Ramp-up to 50 users
+        { duration: '1m', target: 2000 }, // Sudden spike to 2000 users
+        { duration: '10m', target: 50 },  // Back to 50 users
+    ],
+    thresholds: {
+        'http_req_duration': ['p(99)<5000'], // 99% of requests must complete within 5s
+        'http_req_failed': ['rate<0.01'],    // Less than 1% request failure
+    },
+};
+
+export default function () {
+    const res = http.get('https://test-api.com/endpoint');
+
+    check(res, {
+        'status was 200': (r) => r.status === 200,
+        'response time < 2s': (r) => r.timings.duration < 2000,
+    });
+}
