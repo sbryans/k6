@@ -1,0 +1,13 @@
+import http from 'k6/http';
+import { sleep } from 'k6';
+
+export let options = {
+    rps: 50, // Restrict requests per second to simulate throttled connections
+    vus: 50,
+    duration: '1m',
+};
+
+export default function () {
+    http.get('https://test-api.com/endpoint');
+    sleep(1);
+}
