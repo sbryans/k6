@@ -1,0 +1,32 @@
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+
+export let options = {
+    vus: 50,
+    duration: '5m',
+    thresholds: {
+        'http_req_duration': ['avg<2000'], // Average response time < 2s
+        'http_req_failed': ['rate<0.02'], // Less than 2% request failure
+    },
+};
+
+export default function () {
+    const retryCount = 3;
+    let attempts = 0;
+    let res;
+
+    while (attempts < retryCount) {
+        res = http.get('https://test-api.com/unstable-endpoint', {
+            timeout: '5s',
+        });
+        if (res.status === 200) break;
+        attempts++;
+    }
+
+    check(res, {
+        'request succeeded on retry': (r) => r.status === 200,
+        'retried less than 3 times': () => attempts < retryCount,
+    });
+
+    sleep(1);
+}
