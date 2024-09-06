@@ -1,0 +1,11 @@
+export let options = {
+    stages: [
+        { duration: '30s', target: 50 }, // Ramp up to 50 VUs
+        { duration: '1m', target: 100 }, // Stay at 100 VUs for 1 minute
+        { duration: '30s', target: 0 },  // Ramp down to 0 VUs
+    ],
+};
+
+export default function () {
+    http.get('https://test-api.com/endpoint');
+}
